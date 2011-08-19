@@ -1,0 +1,154 @@
+% my $channel = $_[0]->{handler}->args->[0];
+% my $mxhr = $_[0]->{handler}->request->param('mxhr');
+<html>
+<head>
+<title>Dashboard</title>
+<meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
+<script type="text/javascript"
+        src="http://maps.googleapis.com/maps/api/js?sensor=false"></script>
+<!--<script src="http://maps.google.com/maps?file=api&amp;v=2&amp;key=ABQIAAAAjU0EJWnWPMv7oQ-jjS7dYxQ6f9Y9CoQLM6VWsH3nUSZMbXzTABT_N_xWHEj5W3IG7a02rRAUMmH33A" type="text/javascript"></script>-->
+
+<!--<script src="/static/jquery-1.3.2.min.js"></script>-->
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.4/jquery.js"></script>
+<script src="http://platform.twitter.com/anywhere.js?id=DQn4FwJUxolRCYvdHeYJUQ&v=1"></script>
+% if ($mxhr) {
+<script src="/static/DUI.js"></script>
+<script src="/static/Stream.js"></script>
+% } else {
+<script src="/static/jquery.ev.js"></script>
+% }
+<script src="/static/jquery.md5.js"></script>
+<script src="/static/jquery.cookie.js"></script>
+<script src="/static/jquery.oembed.js"></script>
+<script src="/static/pretty.js"></script>
+<script>
+  var map;
+  var location_cache = {};
+  function load() {
+    var latlng = new google.maps.LatLng(37.541, 127.066);
+    var myOptions = {
+      zoom: 16,
+      center: latlng,
+      mapTypeId: google.maps.MapTypeId.ROADMAP
+    };
+    map = new google.maps.Map(document.getElementById("map"), myOptions);
+  }
+
+  twttr.anywhere(function(twitter) {
+     twitter.hovercards();
+  });
+
+/*    if (GBrowserIsCompatible()) {
+      map = new GMap2(document.getElementById("map"));
+      map.setCenter(new GLatLng(37.5411, 127.0665), 16);
+      map.addControl(new GSmallMapControl());
+      map.addControl(new GScaleControl());
+      map.addControl(new GMapTypeControl());
+      map.addControl(new GOverviewMapControl());
+    }
+  }
+*/
+  $(function () {   
+    var onNewEvent = function (e) {
+      try {
+        var location = new google.maps.LatLng(e.lat, e.lng);
+        if (location_cache[e.id]) return;
+        location_cache[e.id] = location;
+        var marker = new google.maps.Marker({
+          position: location,
+          map: map,
+          animation: google.maps.Animation.DROP,
+          icon: e.icon,
+          title: e.name
+        });
+        var infoWindow = new google.maps.InfoWindow({
+          content: e.name + " " + e.people,
+          size: new google.maps.Size(20,20),
+          position: location
+        });
+        google.maps.event.addListener(marker, 'click', function () {
+          infoWindow.open(map, marker);
+        });
+        map.setCenter(location);
+        var date = new Date(e.created_at * 1000);
+
+        $('#list').append($('<li/>').html($('<span/>').attr({ class: "venue br" }).html(e.name).append($('<span/>').attr({ class: 'pretty-time', title: date.toUTCString() }).html(date.toDateString()))).click(function () {
+          map.setCenter(location);        
+        }));
+/*        var location = new google.map.LatLng(e.lat, e.lng);
+        location_cache[e.id] = location;
+        var marker = new GMarker(location);
+        map.addOverlay(marker);
+        map.setCenter(location);
+        $('#list').append($('<li>').html(e.name).click(function () {
+          map.setCenter(location);        
+        }));
+*/
+     } catch (e) { if (console) console.log(e) };
+    }
+
+    $.ev.handlers.message = onNewEvent;
+    $.ev.loop('/dashboard/poll?client_id=' + Math.random());
+});
+</script>
+<link rel="stylesheet" href="/static/screen.css" />
+<style>
+#messages {
+  margin-top: 1em;
+  margin-right: 3em;
+  width: 100%;
+}
+#map {
+  width: 800px;
+  height: 600px;
+  margin-top: 1em;
+  margin-bottom: 1em;
+}
+.avatar {
+  width: 25px;
+  vertical-align: top;
+}
+.avatar img {
+  width: 25px; height: 25px;
+  vertical-align: top;
+  margin-right: 0.5em;
+}
+.chat-message {
+  width: 70%;
+}
+.chat-message .name {
+  font-weight: bold;
+}
+.meta {
+  vertical-align: top;
+  color: #888;
+  font-size: 0.8em;
+}
+body {
+  margin: 1em 2em
+}
+ul#list > li {
+  background: #778899;
+  line-height: 1em;
+  cursor: pointer;
+}
+
+</style>
+</head>
+<body onload="load()">
+
+<div id="wrapper">        
+  <div id="header"></div>
+  <div id="content">  
+
+    <table border="0">
+     <tr>    
+      <td><div id="map"></div></td> 
+      <td><ul id="list"></ul></td>
+     </tr>
+    </table>
+  </div>
+
+</div>
+</body>
+</html>
