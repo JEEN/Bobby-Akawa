@@ -9,7 +9,7 @@ use Time::HiRes;
 package DashboardPollHandler {
   use base qw(Tatsumaki::Handler);
   __PACKAGE__->asynchronous(1);
-
+  $Tatsumaki::MessageQueue::BacklogLength = 100;
   use Tatsumaki::MessageQueue;
 
   sub get {

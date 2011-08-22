@@ -2,11 +2,7 @@
 <head>
 <title>Dashboard</title>
 <meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
-<script type="text/javascript"
-        src="http://maps.googleapis.com/maps/api/js?sensor=false"></script>
-<!--<script src="http://maps.google.com/maps?file=api&amp;v=2&amp;key=ABQIAAAAjU0EJWnWPMv7oQ-jjS7dYxQ6f9Y9CoQLM6VWsH3nUSZMbXzTABT_N_xWHEj5W3IG7a02rRAUMmH33A" type="text/javascript"></script>-->
-
-<!--<script src="/static/jquery-1.3.2.min.js"></script>-->
+<script type="text/javascript" src="http://maps.googleapis.com/maps/api/js?sensor=false"></script>
 <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.4/jquery.js"></script>
 <script src="http://platform.twitter.com/anywhere.js?id=DQn4FwJUxolRCYvdHeYJUQ&v=1"></script>
 <script src="/static/jquery.ev.js"></script>
@@ -23,19 +19,9 @@
     };
     map = new google.maps.Map(document.getElementById("map"), myOptions);
   }
-
-
-/*    if (GBrowserIsCompatible()) {
-      map = new GMap2(document.getElementById("map"));
-      map.setCenter(new GLatLng(37.5411, 127.0665), 16);
-      map.addControl(new GSmallMapControl());
-      map.addControl(new GScaleControl());
-      map.addControl(new GMapTypeControl());
-      map.addControl(new GOverviewMapControl());
-    }
-  }
-*/
+  
   $(function () {   
+    var recent_marker;
     var onNewEvent = function (e) {
       try {
         var location = new google.maps.LatLng(e.lat, e.lng);
@@ -44,25 +30,37 @@
         var marker = new google.maps.Marker({
           position: location,
           map: map,
-          animation: google.maps.Animation.DROP,
+    //      animation: google.maps.Animation.DROP,
           icon: e.icon,
           title: e.name
         });
         var date = new Date(e.created_at * 1000);
-        google.maps.event.addListener(marker, 'click', function () {
+        var show_status = function () {
            $('#location').html(e.name);
-           $('#VisitedAt').html(date.toDateString());
+           $('#VisitedAt').html(date.toDateString() + " " + date.toTimeString());
            $('#People').html(e.people);
            twttr.anywhere(function (T) {
-                   T('#People').hovercards();
-                    });
+             T('#People').hovercards();
+           });
            $('#result').show();
+           if (recent_marker) {
+             recent_marker.setAnimation(null);
+           }
+           recent_marker = marker;
+           if (marker.getAnimation() != null) {
+             marker.setAnimation(null);
+           } else {
+             marker.setAnimation(google.maps.Animation.BOUNCE);
+           }
            map.setCenter(location);
+        };
+        google.maps.event.addListener(marker, 'click', function () {
+          show_status();
         });
         map.setCenter(location);
 
         $('#list').append($('<li/>').html($('<span/>').attr({ class: "venue br" }).html(e.name)).click(function () {
-          map.setCenter(location);        
+          show_status();
         }));
      } catch (e) { if (console) console.log(e) };
     }
@@ -73,6 +71,13 @@
 </script>
 <link rel="stylesheet" href="/static/screen.css" />
 <style>
+a:link {
+  color: white;
+}        
+
+a:visited {
+  color: white;
+}
 #messages {
   margin-top: 1em;
   margin-right: 3em;
@@ -84,10 +89,18 @@
   margin-top: 1em;
   margin-bottom: 1em;
 }
+#ul-list {
+  width: 400px;
+  height: 600px;
+  overflow: auto;
+  vertical-align: top;
+  margin-top: 1em;
+  margin-bottom: 1em;
+}
 #result {
     position: absolute;
     top: 80px;
-    left: 480px;
+    right: 480px;
     z-index: 100;
     background-image: url(/static/opbg.png);
     color: #FFFFFF;
@@ -96,25 +109,8 @@
     -webkit-border-radius: 10px;
     display: none;
 }
-.avatar {
-  width: 25px;
-  vertical-align: top;
-}
-.avatar img {
-  width: 25px; height: 25px;
-  vertical-align: top;
-  margin-right: 0.5em;
-}
-.chat-message {
-  width: 70%;
-}
-.chat-message .name {
-  font-weight: bold;
-}
-.meta {
-  vertical-align: top;
-  color: #888;
-  font-size: 0.8em;
+#location {
+  color: #FFFFFF;
 }
 body {
   margin: 1em 2em
@@ -122,6 +118,7 @@ body {
 ul#list > li {
   background: #778899;
   line-height: 1em;
+  padding: 5 5 5 5;
   cursor: pointer;
 }
 
@@ -132,15 +129,16 @@ ul#list > li {
 <div id="wrapper">        
   <div id="header"></div>
   <div id="content">  
-  <div id="result">
+        
+   <div id="result">
     <h4 id="location"></h4>
     <div id="VisitedAt"></div>
     <div id="People"></div>
   </div>
-    <table border="0">
+  <table border="0">
      <tr>    
       <td><div id="map"></div></td> 
-      <td><ul id="list"></ul></td>
+      <td><div id="ul-list"><ul id="list"></ul></div></td>
      </tr>
     </table>
   </div>
