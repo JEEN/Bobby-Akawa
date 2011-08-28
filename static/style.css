@@ -1,50 +1,36 @@
-a:link {
-  color: white;
-}        
-
-a:visited {
-  color: white;
-}
-#messages {
-  margin-top: 1em;
-  margin-right: 3em;
-  width: 100%;
-}
-#map {
-  width: 800px;
-  height: 600px;
-  margin-top: 1em;
-  margin-bottom: 1em;
-}
-#ul-list {
-  width: 400px;
-  height: 600px;
-  overflow: auto;
-  vertical-align: top;
-  margin-top: 1em;
-  margin-bottom: 1em;
-}
-#result {
-    position: absolute;
-    top: 80px;
-    right: 480px;
-    z-index: 100;
-    background-image: url(/static/opbg.png);
-    color: #FFFFFF;
-    padding: 20px;
-    -moz-border-radius: 10px;
-    -webkit-border-radius: 10px;
-    display: none;
-}
-#location {
-  color: #FFFFFF;
-}
 body {
-  margin: 1em 2em
+    background: #F7F7F7;
+    color: #404333;
 }
-ul#list > li {
-  background: #778899;
-  line-height: 1em;
-  padding: 5 5 5 5;
+
+#map {
+  width: 66%;
+  height: 100%;
+  float: right;
+}
+
+#list {
+    padding: 1em;
+}
+
+#list > li:before {
+    content: "'-']";
+    margin-right: 0.7em;
+    color: #FBA922;
+}
+
+#list > li {
+  line-height: 1.2em;
   cursor: pointer;
 }
+
+#result {
+    background: #2D3032;
+    padding: 1em;
+    color: #F7F7F7;
+}
+
+#People a:visited { color: #FBA922; }
+#People a:link { color: #DD5F18; }
+#VisitedAt { font-style: italic; }
+#location { font-size: 2em; }
