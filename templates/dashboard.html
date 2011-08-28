@@ -2,6 +2,8 @@
 <head>
 <title>Dashboard</title>
 <meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
+<link rel="stylesheet" type="text/css" href="/static/reset-min.css" />
+<link rel="stylesheet" type="text/css" href="/static/style.css" />
 <script type="text/javascript" src="http://maps.googleapis.com/maps/api/js?sensor=false"></script>
 <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.4/jquery.js"></script>
 <script src="http://platform.twitter.com/anywhere.js?id=DQn4FwJUxolRCYvdHeYJUQ&v=1"></script>
@@ -69,60 +71,6 @@
     $.ev.loop('/dashboard/poll?client_id=' + Math.random());
 });
 </script>
-<link rel="stylesheet" href="/static/screen.css" />
-<style>
-a:link {
-  color: white;
-}        
-
-a:visited {
-  color: white;
-}
-#messages {
-  margin-top: 1em;
-  margin-right: 3em;
-  width: 100%;
-}
-#map {
-  width: 800px;
-  height: 600px;
-  margin-top: 1em;
-  margin-bottom: 1em;
-}
-#ul-list {
-  width: 400px;
-  height: 600px;
-  overflow: auto;
-  vertical-align: top;
-  margin-top: 1em;
-  margin-bottom: 1em;
-}
-#result {
-    position: absolute;
-    top: 80px;
-    right: 480px;
-    z-index: 100;
-    background-image: url(/static/opbg.png);
-    color: #FFFFFF;
-    padding: 20px;
-    -moz-border-radius: 10px;
-    -webkit-border-radius: 10px;
-    display: none;
-}
-#location {
-  color: #FFFFFF;
-}
-body {
-  margin: 1em 2em
-}
-ul#list > li {
-  background: #778899;
-  line-height: 1em;
-  padding: 5 5 5 5;
-  cursor: pointer;
-}
-
-</style>
 </head>
 <body onload="load()">
 
