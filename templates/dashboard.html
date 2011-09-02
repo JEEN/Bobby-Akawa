@@ -176,7 +176,7 @@
     <div id="Photos"></div>
   </div>
 % my $self = $_[0]->{handler};
-% if (my $user = $self->session("user")) {
+% if (my $user = $self->session("4sq_user")) {
   <div id="user">
    <div class="photo"><img src="<%= $user->{photo} %>" /></div>
    <div class="profile"><%= $user->{firstName} %> <%= $user->{lastName} %></div>
