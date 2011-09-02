@@ -24,30 +24,24 @@
   }
 
   var cache = {};
-  var NotiBarTypes = [ 'error', 'success' ];
   var NotiBar = {
+      types: [ 'error', 'success' ],
       hideAllMessages: function () {
          var messagesHeights = new Array();
-		 for (i=0; i< NotiBarTypes.length; i++)
+		 for (i=0; i< this.types.length; i++)
 		 {
-			messagesHeights[i] = $('.' + NotiBarTypes[i]).outerHeight();
-			$('.' + NotiBarTypes[i]).css('top', -messagesHeights[i]); 
+			messagesHeights[i] = $('.' + this.types[i]).outerHeight();
+			$('.' + this.types[i]).css('top', -messagesHeights[i]); 
 		 }
 	  },
-	  showMessage: function (type) { 
+	  showMessage: function (type, msg) { 
               this.hideAllMessages();
-	      $('.'+type).animate({top:"0"}, 500);
+              if (msg) $('.'+type).find('h3').html(msg);
+	      $('.'+type).animate({top:"0"}, 500).delay(1000).fadeOut();
 	  }
   };
 
   var Bobby = {
-      timeout: function (ms) {
-        var dfd = $.Deffered();
-        setTimeout(function () {
-          dfd.resolve();
-        }, ms);
-        return dfd.promise();
-      },
       get_venue: function (id) {
 	     return cache["venue:"+id] || $.getJSON('/dashboard/venue/' + id, function (resp) {
              result = resp;
@@ -56,7 +50,7 @@
       },
       update: function () {
 	   $.when($.getJSON('/dashboard/updater')).then(function (resp) {
-  	      NotiBar.showMessage('success');
+  	      NotiBar.showMessage('success', "새로운 체크인정보를 업데이트하였습니다");
   	   })
       }
   };
@@ -64,6 +58,25 @@
   $(function () { 
     $('#Updater').click(function () {
       Bobby.update();
+    });
+
+    $('#MyLoc').click(function () {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(function (pos) {
+          NotiBar.showMessage("success", "I Found You!");
+          var loc = new google.maps.LatLng(pos.coords.latitude, pos.coords.longitude);
+          var marker = new google.maps.Marker({
+            position: loc,
+            map: map,
+            icon: "/static/person.png",
+            title: "You're Here!"
+          });
+        }, function () {
+          NotiBar.showMessage("error", "Could not use Geolocation API");
+        });
+      } else {
+        NotiBar.showMessage('error', "Could not use Geolocation API"); 
+      }
     });
 
     NotiBar.hideAllMessages();
@@ -125,10 +138,13 @@
         });
         map.setCenter(location);
 
-        $('#list').append($('<li/>').html($('<span/>').attr({ class: "venue br" }).html(e.name)).click(function () {
-          show_status();
-        }));
-     } catch (e) { if (console) console.log(e) };
+        $('#list').append(
+            $('<li/>').html(e.name)
+            .click(function () {
+               show_status();
+            }));
+
+      } catch (e) { if (console) console.log(e) };
     }
 
     $.ev.handlers.message = onNewEvent;
@@ -164,11 +180,12 @@
   <div id="user">
    <div class="photo"><img src="<%= $user->{photo} %>" /></div>
    <div class="profile"><%= $user->{firstName} %> <%= $user->{lastName} %></div>
-   <div id="Updater"><a href="#">HERE!</a></div>
+   <div id="Updater"><a href="#">UPDATE!</a></div>
+   <div id="MyLoc"><a href="#">Here am I!</a></div>
   </div>
 % } else {
   <div id="login_pannel">
-   <a href="/authenticate">LOGIN</a>
+   <p><a href="/authenticate">LOGIN</a></p>
   </div>
 % }
  </div>
