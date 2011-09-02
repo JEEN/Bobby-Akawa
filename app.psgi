@@ -7,16 +7,37 @@ use Tatsumaki::Error;
 use Tatsumaki::Application;
 use Time::HiRes;
 use JSON::XS;
+use Plack::Session;
 
-our $OAUTH_TOKEN = '3IY3E4YGHFJUMIF4UQECELXIFYRKIZRWRPQFWLTJVFIB4RMY';
 our $LIMIT = 10;
 
 our $CLIENT_ID = '0Z5WKEHGKJYNM0Z1VRXNG3ZC1T02DLTH1JLK4SXCU5V4RFWS';
 our $CLIENT_SECRET = 'I1HN2BJ2EHYZT2HZD2GUYQVTQN55GURLJS1RHLYL1OBII1HC';
-our $CALLBACK_URL = "http://bobby.silex.kr/authenticate_receive";
+our $CALLBACK_URL = "http://bobby.silex.kr/authenticate/receive";
+
+package BobbyBaseHandler {
+  use base qw(Tatsumaki::Handler);
+
+  sub session {
+    my ($self,$k,$v) = @_;
+    
+    !$k and !$v and return undef;
+
+    my $session = Plack::Session->new($self->request->env);
+    return $session->get($k) unless $v;
+    $session->set($k, $v);
+  }
+
+  sub oauth_token {
+    my ($self, $v) = @_;
+
+    $self->session("token") unless $v;
+    $self->session("token", $v);
+  }
+}
 
 package DashboardPollHandler {
-  use base qw(Tatsumaki::Handler);
+  use base qw(BobbyBaseHandler);
   __PACKAGE__->asynchronous(1);
   use Tatsumaki::MessageQueue;
   $Tatsumaki::MessageQueue::BacklogLength = 100;
@@ -40,7 +61,7 @@ package DashboardPollHandler {
 }
 
 package DashboardPostHandler {
-  use base qw(Tatsumaki::Handler);
+  use base qw(BobbyBaseHandler);
   use Encode;
 
   sub post {
@@ -63,15 +84,17 @@ package DashboardPostHandler {
 }
 
 package DashboardVenueHandler {
-  use base qw(Tatsumaki::Handler);
+  use base qw(BobbyBaseHandler);
   use Furl;
   use JSON::XS;
 
   sub get {
     my ($self, $venue_id) = @_;
 
+    return $self->write({ auth_required => 1 }) unless $self->oauth_token;
+
     my $v = $self->request->parameters;
-    my $furl = Furl->new->get((sprintf 'https://api.foursquare.com/v2/venues/%s?oauth_token=%s', $venue_id, $OAUTH_TOKEN));
+    my $furl = Furl->new->get((sprintf 'https://api.foursquare.com/v2/venues/%s?oauth_token=%s', $venue_id, $self->oauth_token));
     my $content = decode_json($furl->content);
 
     my $venue = $content->{response}->{venue};
@@ -90,14 +113,15 @@ package DashboardVenueHandler {
 }
 
 package DashboardUpdateHandler {
-  use base qw(Tatsumaki::Handler);
+  use base qw(BobbyBaseHandler);
   __PACKAGE__->asynchronous(1);  
 
   sub get {
     my ($self, $oauth_token) = @_;
 
+    return $self->write({ auth_required => 1 }) unless $self->oauth_token;
     my $client = Tatsumaki::HTTPClient->new;
-    my $url = sprintf 'https://api.foursquare.com/v2/users/self/checkins?oauth_token=%s&limit=%d', $OAUTH_TOKEN, $LIMIT;
+    my $url = sprintf 'https://api.foursquare.com/v2/users/self/checkins?oauth_token=%s&limit=%d', $self->oauth_token, $LIMIT;
     $client->get($url, $self->async_cb(sub { $self->on_response(@_) } ));
   }
 
@@ -139,7 +163,7 @@ package DashboardUpdateHandler {
 }
 
 package DashboardHandler {
-  use base qw(Tatsumaki::Handler);
+  use base qw(BobbyBaseHandler);
 
   sub get {
     my($self, $channel) = @_;
@@ -148,55 +172,66 @@ package DashboardHandler {
 }
 
 package AuthenticateHandler {
-  use base qw(Tatsumaki::Handler);
+  use base qw(BobbyBaseHandler);
 
   sub get {
-    my $self = shift;
+    my ($self) = @_;
 
-    $self->res->redirect(sprintf "https://foursquare.com/oauth2/authenticate?client_id=%s&response_type=code&redirect_uri=%s", $CLIENT_ID, $CALLBACK_URL);
+    return $self->response->redirect("/dashboard/") if $self->session("token");
+
+    $self->response->redirect(sprintf "https://foursquare.com/oauth2/authenticate?client_id=%s&response_type=code&redirect_uri=%s", $CLIENT_ID, $CALLBACK_URL);
   }
 }
 
 package AuthReceiveHandler {
-  use base qw(Tatsumaki::Handler);
+  use Furl;
+  use base qw(BobbyBaseHandler);
+  use Data::Dumper;
 
   sub get {
     my $self = shift;
-   
-    my $v = $self->req->parameters;
-    warn $v->{code};
 
-    my $client = Tatsumaki::HTTPClient->new;
-    $client->get(sprintf "https://foursquare.com/oauth2/access_token?client_id=%s&client_secret=%s&grant_type=authorization_code&redirect_uri=%s&code=%s", $CLIENT_ID, $CLIENT_SECRET, $CALLBACK_URL, $v->{code}, $self->async_cb(sub { $self->on_response(@_) })); 
-  }
+    return $self->response->redirect("/dashboard/") if $self->session("token");   
+    my $v = $self->request->parameters;
 
-  sub on_response {
-    my ($self, $res) = @_;
+    my $furl = Furl->new;
+    my $url = sprintf "https://foursquare.com/oauth2/access_token?client_id=%s&client_secret=%s&grant_type=authorization_code&redirect_uri=%s&code=%s", $CLIENT_ID, $CLIENT_SECRET, $CALLBACK_URL, $v->{code};
+    my $res = $furl->get($url);
 
-    if ($res->is_error) {
+    unless ($res->is_success) {
       Tatsumaki::Error::HTTP->throw(500);
     }
     my $data = JSON::XS::decode_json($res->content);
-    warn $data->{access_token};
-    $self->write($data->{access_token});
+    $self->session("token", $data->{access_token});
+
+    my $user_req_url = sprintf "https://api.foursquare.com/v2/users/self?oauth_token=%s", $data->{access_token};
+    my $user_res = $furl->get($user_req_url);
+    my $user_data = JSON::XS::decode_json($user_res->content);
+    $self->session("user", $user_data->{response}->{user});
+    $self->response->redirect("/dashboard/");
   }
 }
 
 package main {
   use File::Basename;
-
+  use Plack::Builder;
   my $app = Tatsumaki::Application->new([
     "/dashboard/poll" => 'DashboardPollHandler',
     "/dashboard/post" => 'DashboardPostHandler',
     '/dashboard/venue/(\w+)' => 'DashboardVenueHandler',
     "/dashboard/update" => 'DashboardUpdateHandler',
     "/dashboard/" => 'DashboardHandler',
+    "/authenticate/receive" => 'AuthReceiveHandler',
     "/authenticate" => 'AuthenticateHandler',
-    "/authenticate_receive" => 'AuthReceiveHandler',
   ]);
 
   $app->template_path(dirname(__FILE__) . "/templates");
   $app->static_path(dirname(__FILE__) . "/static");
 
-  return $app->psgi_app;
+  my $psgi_app =  $app->psgi_app;
+  builder {
+    enable "Session";
+    $psgi_app;
+  }
 }
+

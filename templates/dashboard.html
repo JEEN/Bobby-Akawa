@@ -8,6 +8,7 @@
 <script type="text/javascript" src="http://maps.googleapis.com/maps/api/js?sensor=false"></script>
 <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.js"></script>
 <script src="http://platform.twitter.com/anywhere.js?id=DQn4FwJUxolRCYvdHeYJUQ&v=1"></script>
+<script src="/static/mustache.js"></script>
 <script src="/static/jquery.ev.js"></script>
 <script>
   var map;
@@ -35,41 +36,53 @@
 	  },
 	  showMessage: function (type) { 
               this.hideAllMessages();
-			  $('.'+type).animate({top:"0"}, 500);
+	      $('.'+type).animate({top:"0"}, 500);
 	  }
   };
 
   var Bobby = {
+      timeout: function (ms) {
+        var dfd = $.Deffered();
+        setTimeout(function () {
+          dfd.resolve();
+        }, ms);
+        return dfd.promise();
+      },
       get_venue: function (id) {
 	     return cache["venue:"+id] || $.getJSON('/dashboard/venue/' + id, function (resp) {
-               result = resp;
-			   cache["venue:"+id] = resp;
+             result = resp;
+	     cache["venue:"+id] =  resp;
          });
       },
       update: function () {
-	     $.getJSON('/dashboard/updater', function (resp) {;
-				 NotiBar.showMessage('success');
-		 });
+	   $.when($.getJSON('/dashboard/updater')).then(function (resp) {
+  	      NotiBar.showMessage('success');
+  	   })
       }
   };
 
   $(function () { 
     $('#Updater').click(function () {
       Bobby.update();
-	});
+    });
 
     NotiBar.hideAllMessages();
 		 
     $('.message').click(function(){			  
-	  $(this).animate({top: -$(this).outerHeight()}, 500);
-	});	
+       $(this).animate({top: -$(this).outerHeight()}, 500);
+    });	
 
     var recent_marker;
     var onNewEvent = function (e) {
       try {
         var location = new google.maps.LatLng(e.lat, e.lng);
-        if (location_cache[e.id]) return;
-        location_cache[e.id] = location;
+        if (location_cache[e.id]) {
+          location_cache[e.id].push(e);
+          return;
+        } else {
+          location_cache[e.id] = new Array();
+          location_cache[e.id].push(e);
+        }
         var marker = new google.maps.Marker({
           position: location,
           map: map,
@@ -79,16 +92,16 @@
         });
         var date = new Date(e.created_at * 1000);
         var show_status = function () {
-  	       $.when(Bobby.get_venue(e.id)).then(function (res) {
-			  $('#beenHere').html(res.checkinCount + ' / ' + res.usersCount);
-			  $('#location').html($('<a/>').attr({ href: res.foursquareUrl, target: "_blank" }).html(e.name + " (" + res.beenHere + ")" ));
-   		      $(res.photos).each(function (id, data) {
-				 var thumbnail = data.sizes.items[2];
-				 if (!thumbnail) return;	   
-                 $('<img>').attr({ src: thumbnail.url, width: thumbnail.width, height: thumbnail.height }).appendTo($('#Photos'));
-			  });
+  	   $.when(Bobby.get_venue(e.id)).then(function (res) {
+	        $('#location').html($('<a/>').attr({ href: res.foursquareUrl, target: "_blank" }).html(e.name + " (" + res.beenHere + ")" ));
+   		$(res.photos).each(function (id, data) {
+		  var thumbnail = data.sizes.items[2];
+		  if (!thumbnail) return;	   
+                  $('<img>').attr({ src: thumbnail.url, width: thumbnail.width, height: thumbnail.height }).appendTo($('#Photos'));
+		});
            });
-		   $('#location').html(e.name);
+
+	   $('#location').html(e.name);
            $('#VisitedAt').html(date.toDateString() + " " + date.toTimeString());
            $('#People').html(e.people);
            twttr.anywhere(function (T) {
@@ -106,6 +119,7 @@
            }
            map.setCenter(location);
         };
+
         google.maps.event.addListener(marker, 'click', function () {
           show_status();
         });
@@ -123,16 +137,18 @@
 </script>
 </head>
 <body onload="load()">
-<div id="header"></div>
-<div class="success message">
-	<h3>새로운 체크인정보를 업데이트했습니다.</h3>
-	<p>....</p>
-</div>
-
-<div class="error message">
+<div class="messages">
+  <div class="success message">
+    <h3>새로운 체크인정보를 업데이트했습니다.</h3>
+    <p>....</p>
+  </div>
+  <div class="error message">
     <h3>에러가 발생했습니다.</h3>
     <p>....</p>
+  </div>
 </div>
+<div id="header"></div>
+
 <div id="content">  
   <div id="map"></div>
   <div id="ul-list"><ul id="list"></ul></div>
@@ -143,7 +159,18 @@
     <div id="People"></div>
     <div id="Photos"></div>
   </div>
-  <div id="Updater"><a href="#">HERE!</a></div>
+% my $self = $_[0]->{handler};
+% if (my $user = $self->session("user")) {
+  <div id="user">
+   <div class="photo"><img src="<%= $user->{photo} %>" /></div>
+   <div class="profile"><%= $user->{firstName} %> <%= $user->{lastName} %></div>
+   <div id="Updater"><a href="#">HERE!</a></div>
+  </div>
+% } else {
+  <div id="login_pannel">
+   <a href="/authenticate">LOGIN</a>
+  </div>
+% }
  </div>
 </body>
 </html>
