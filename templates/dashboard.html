@@ -105,6 +105,7 @@
         });
         var date = new Date(e.created_at * 1000);
         var show_status = function () {
+           $('#Photos > img').remove();
   	   $.when(Bobby.get_venue(e.id)).then(function (res) {
 	        $('#location').html($('<a/>').attr({ href: res.foursquareUrl, target: "_blank" }).html(e.name + " (" + res.beenHere + ")" ));
    		$(res.photos).each(function (id, data) {
@@ -170,14 +171,14 @@
 % my $self = $_[0]->{handler};
 % if (my $user = $self->session("4sq_user")) {
   <div id="user">
-   <div class="photo"><img src="<%= $user->{photo} %>" /></div>
+   <div class="photo"><img src="<%= $user->{photo} %>" width="32" height="32" /></div>
    <div class="profile"><%= $user->{firstName} %> <%= $user->{lastName} %></div>
    <div id="Updater"><a href="#">UPDATE!</a></div>
    <div id="MyLoc"><a href="#">Here am I!</a></div>
   </div>
 % } else {
   <div id="login_pannel">
-   <p><a href="/authenticate">LOGIN</a></p>
+   <p><a href="/authenticate/4sq">LOGIN</a></p>
   </div>
 % }
  </div>
