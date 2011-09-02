@@ -3,10 +3,23 @@ body {
     color: #404333;
 }
 
+/*
+li { color: white }
+li:nth-child(odd) { background: #2D3032 }
+li:nth-child(even) { background: #404333 }
+*/
+li:hover { color: #FBA922; }
+li:active { color: #DD5F18; }
+
 #map {
   width: 66%;
   height: 100%;
   float: right;
+}
+
+#ul-list {
+    height: 60%;
+    overflow: auto;
 }
 
 #list {
@@ -17,6 +30,7 @@ body {
     content: "'-']";
     margin-right: 0.7em;
     color: #FBA922;
+    background: #F7F7F7;
 }
 
 #list > li {

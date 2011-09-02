@@ -169,6 +169,15 @@ package DashboardUpdateHandler {
   }
 }
 
+package RootHandler {
+  use base qw(BobbyBaseHandler);
+
+  sub get {
+    my($self) = shift;
+    $self->response->redirect('/dashboard/');
+  }
+}
+
 package DashboardHandler {
   use base qw(BobbyBaseHandler);
 
@@ -230,6 +239,7 @@ package main {
     "/dashboard/" => 'DashboardHandler',
     "/authenticate/receive" => 'AuthReceiveHandler',
     "/authenticate" => 'AuthenticateHandler',
+    "/" => 'RootHandler',
   ]);
 
   $app->template_path(dirname(__FILE__) . "/templates");
