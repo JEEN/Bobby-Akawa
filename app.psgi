@@ -11,6 +11,10 @@ use JSON::XS;
 our $OAUTH_TOKEN = '3IY3E4YGHFJUMIF4UQECELXIFYRKIZRWRPQFWLTJVFIB4RMY';
 our $LIMIT = 10;
 
+our $CLIENT_ID = '0Z5WKEHGKJYNM0Z1VRXNG3ZC1T02DLTH1JLK4SXCU5V4RFWS';
+our $CLIENT_SECRET = 'I1HN2BJ2EHYZT2HZD2GUYQVTQN55GURLJS1RHLYL1OBII1HC';
+our $CALLBACK_URL = "http://bobby.silex.kr/authenticate_receive";
+
 package DashboardPollHandler {
   use base qw(Tatsumaki::Handler);
   __PACKAGE__->asynchronous(1);
@@ -143,6 +147,41 @@ package DashboardHandler {
   }
 }
 
+package AuthenticateHandler {
+  use base qw(Tatsumaki::Handler);
+
+  sub get {
+    my $self = shift;
+
+    $self->res->redirect(sprintf "https://foursquare.com/oauth2/authenticate?client_id=%s&response_type=code&redirect_uri=%s", $CLIENT_ID, $CALLBACK_URL);
+  }
+}
+
+package AuthReceiveHandler {
+  use base qw(Tatsumaki::Handler);
+
+  sub get {
+    my $self = shift;
+   
+    my $v = $self->req->parameters;
+    warn $v->{code};
+
+    my $client = Tatsumaki::HTTPClient->new;
+    $client->get(sprintf "https://foursquare.com/oauth2/access_token?client_id=%s&client_secret=%s&grant_type=authorization_code&redirect_uri=%s&code=%s", $CLIENT_ID, $CLIENT_SECRET, $CALLBACK_URL, $v->{code}, $self->async_cb(sub { $self->on_response(@_) })); 
+  }
+
+  sub on_response {
+    my ($self, $res) = @_;
+
+    if ($res->is_error) {
+      Tatsumaki::Error::HTTP->throw(500);
+    }
+    my $data = JSON::XS::decode_json($res->content);
+    warn $data->{access_token};
+    $self->write($data->{access_token});
+  }
+}
+
 package main {
   use File::Basename;
 
@@ -152,6 +191,8 @@ package main {
     '/dashboard/venue/(\w+)' => 'DashboardVenueHandler',
     "/dashboard/update" => 'DashboardUpdateHandler',
     "/dashboard/" => 'DashboardHandler',
+    "/authenticate" => 'AuthenticateHandler',
+    "/authenticate_receive" => 'AuthReceiveHandler',
   ]);
 
   $app->template_path(dirname(__FILE__) . "/templates");
