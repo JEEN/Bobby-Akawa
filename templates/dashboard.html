@@ -154,27 +154,19 @@
 </head>
 <body onload="load()">
 <div class="messages">
-  <div class="success message">
-    <h3>새로운 체크인정보를 업데이트했습니다.</h3>
-    <p>....</p>
-  </div>
-  <div class="error message">
-    <h3>에러가 발생했습니다.</h3>
-    <p>....</p>
-  </div>
+ <div class="success message">
+  <h3>새로운 체크인정보를 업데이트했습니다.</h3>
+  <p>....</p>
+ </div>
+ <div class="error message">
+  <h3>에러가 발생했습니다.</h3>
+  <p>....</p>
+ </div>
 </div>
 <div id="header"></div>
 
-<div id="content">  
-  <div id="map"></div>
-  <div id="ul-list"><ul id="list"></ul></div>
- <div id="result">
-    <h4 id="location"></h4>
-    <div id="beenHere"></div>
-    <div id="VisitedAt"></div>
-    <div id="People"></div>
-    <div id="Photos"></div>
-  </div>
+<div id="content"> 
+ <div id="nav">
 % my $self = $_[0]->{handler};
 % if (my $user = $self->session("user")) {
   <div id="user">
@@ -189,5 +181,15 @@
   </div>
 % }
  </div>
+ <div id="map"></div>
+ <div id="ul-list"><ul id="list"></ul></div>
+ <div id="result">
+  <h4 id="location"></h4>
+  <div id="beenHere"></div>
+  <div id="VisitedAt"></div>
+  <div id="People"></div>
+  <div id="Photos"></div>
+ </div>
+</div>
 </body>
 </html>

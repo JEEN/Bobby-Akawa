@@ -3,13 +3,34 @@ body {
     color: #404333;
 }
 
-/*
-li { color: white }
-li:nth-child(odd) { background: #2D3032 }
-li:nth-child(even) { background: #404333 }
-*/
 li:hover { color: #FBA922; }
 li:active { color: #DD5F18; }
+
+#nav {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 100%;
+  height: 30px;
+  outline: red dotted thin;
+  padding: 10px;
+  z-index: 9;
+  text-align: right;
+  margin: 0 auto;
+  background: #2D3032;
+  opacity:0.8;
+  filter:alpha(opacity=40);
+  color: #F7F7F7;
+}
+
+#nav a:link { color: #F7F7F7; }
+#nav a:visited { color: #F7F7F7; }
+#nav a:hover { color: #FBA922; }
+#nav a:active { color: #DD5F18; }
+
+#content {
+  margin-top: 50px;
+}
 
 #map {
   width: 66%;
@@ -18,7 +39,7 @@ li:active { color: #DD5F18; }
 }
 
 #ul-list {
-    height: 60%;
+    height: 80%;
     overflow: auto;
 }
 
@@ -39,10 +60,32 @@ li:active { color: #DD5F18; }
 }
 
 #result {
-    background: #2D3032;
-    padding: 1em;
-    color: #F7F7F7;
+  display: none;
+  position: fixed;
+  top: 85px;
+  right: 15px;
+  outline: red dotted thin;
+  background: #2D3032;
+  padding: 1em;
+  color: #F7F7F7;
+
+  -moz-border-radius-topleft:10px;
+  -moz-border-radius-topright:10px;
+  -moz-border-radius-bottomleft:10px;
+  -moz-border-radius-bottomright:10px;
+  -webkit-border-top-left-radius:10px;
+  -webkit-border-top-right-radius:10px;
+  -webkit-border-bottom-left-radius:10px;
+  -webkit-border-bottom-right-radius:10px;
+  opacity:0.8;
+  filter:alpha(opacity=40);
 }
+
+#result h4 {
+  font-size: 1.5em;
+}
+
+#result h4:hover { color: #FBA922; }
 
 #People a:visited { color: #FBA922; }
 #People a:link { color: #DD5F18; }
