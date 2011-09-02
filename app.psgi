@@ -9,9 +9,18 @@ use Time::HiRes;
 use JSON::XS;
 use Plack::Session;
 
-our $CLIENT_ID = '0Z5WKEHGKJYNM0Z1VRXNG3ZC1T02DLTH1JLK4SXCU5V4RFWS';
+our $CLIENT_ID     = '0Z5WKEHGKJYNM0Z1VRXNG3ZC1T02DLTH1JLK4SXCU5V4RFWS';
 our $CLIENT_SECRET = 'I1HN2BJ2EHYZT2HZD2GUYQVTQN55GURLJS1RHLYL1OBII1HC';
-our $CALLBACK_URL = "http://bobby.silex.kr/authenticate/receive";
+our $CALLBACK_URL  = "http://bobby.silex.kr/authenticate/receive/4sq";
+
+our $RK_CLIENT_ID     = 'fc13cb3fc22845478db31ba24c36eb84';
+our $RK_CLIENT_SECRET = 'ff9acfb14b874a748d0f4bfebab8f9d3';
+our $RK_CALLBACK_URL  = 'http://bobby.silex.kr/authenticate/receive/runkeeper';
+
+our $SERVICES = {
+  "4sq" => 1,
+  "runkeeper" => 1,
+};
 
 package BobbyBaseHandler {
   use base qw(Tatsumaki::Handler);
@@ -27,11 +36,11 @@ package BobbyBaseHandler {
   }
 
   sub oauth_token {
-    my ($self, $v) = @_;
+    my ($self, $service) = @_;
 
-    $self->session("token") unless $v;
-    $self->session("token", $v);
+    $self->session($service . "_token");
   }
+
 }
 
 package DashboardPollHandler {
@@ -89,10 +98,10 @@ package DashboardVenueHandler {
   sub get {
     my ($self, $venue_id) = @_;
 
-    return $self->write({ auth_required => 1 }) unless $self->oauth_token;
+    return $self->write({ auth_required => 1 }) unless $self->oauth_token("4sq");
 
     my $v = $self->request->parameters;
-    my $furl = Furl->new->get((sprintf 'https://api.foursquare.com/v2/venues/%s?oauth_token=%s', $venue_id, $self->oauth_token));
+    my $furl = Furl->new->get((sprintf 'https://api.foursquare.com/v2/venues/%s?oauth_token=%s', $venue_id, $self->oauth_token("4sq")));
     my $content = decode_json($furl->content);
 
     my $venue = $content->{response}->{venue};
@@ -117,11 +126,11 @@ package DashboardUpdateHandler {
   sub get {
     my ($self, $oauth_token) = @_;
 
-    return $self->write({ auth_required => 1 }) unless $self->oauth_token;
+    return $self->write({ auth_required => 1 }) unless $self->oauth_token("4sq");
     my $client = Tatsumaki::HTTPClient->new;
     my $offset = $self->session("offset") || 0;
     $self->session("offset", $offset);
-    my $url = sprintf 'https://api.foursquare.com/v2/users/self/checkins?oauth_token=%s&limit=100&offset=%d', $self->oauth_token, $self->session("offset");
+    my $url = sprintf 'https://api.foursquare.com/v2/users/self/checkins?oauth_token=%s&limit=100&offset=%d', $self->oauth_token("4sq"), $self->session("offset");
     $client->get($url, $self->async_cb(sub { $self->on_response(@_) } ));
   }
 
@@ -191,23 +200,52 @@ package AuthenticateHandler {
   use base qw(BobbyBaseHandler);
 
   sub get {
+    my ($self, $service) = @_;
+
+    unless ($SERVICES->{$service}) {
+       Tatsumaki::Error::HTTP->throw(500); 
+    }
+
+    my $method = sprintf 'redirect_to_%s', $service;
+    $self->$method();
+  }
+
+  sub redirect_to_4sq {
     my ($self) = @_;
 
-    return $self->response->redirect("/dashboard/") if $self->session("token");
-
     $self->response->redirect(sprintf "https://foursquare.com/oauth2/authenticate?client_id=%s&response_type=code&redirect_uri=%s", $CLIENT_ID, $CALLBACK_URL);
+
+  }
+
+  sub redirect_to_runkeeper {
+    my ($self) = @_;
+
+    $self->response->redirect(sprintf 'https://runkeeper.com/apps/authorize?client_id=%s&response_type=code&redirect_uri=%s', $RK_CLIENT_ID, $RK_CALLBACK_URL);
+
   }
 }
 
 package AuthReceiveHandler {
   use Furl;
+  use HTTP::Request::Common;
   use base qw(BobbyBaseHandler);
   use Data::Dumper;
 
   sub get {
-    my $self = shift;
+    my ($self, $service) = @_;
 
-    return $self->response->redirect("/dashboard/") if $self->session("token");   
+    unless ($SERVICES->{$service}) {
+       Tatsumaki::Error::HTTP->throw(500);     
+    }
+
+    my $method = sprintf "receive_token_%s", $service;
+
+    return $self->$method();
+  }
+
+  sub receive_token_4sq {
+    my ($self) = @_;
+
     my $v = $self->request->parameters;
 
     my $furl = Furl->new;
@@ -218,13 +256,35 @@ package AuthReceiveHandler {
       Tatsumaki::Error::HTTP->throw(500);
     }
     my $data = JSON::XS::decode_json($res->content);
-    $self->session("token", $data->{access_token});
+    $self->session("4sq_token", $data->{access_token});
 
     my $user_req_url = sprintf "https://api.foursquare.com/v2/users/self?oauth_token=%s", $data->{access_token};
     my $user_res = $furl->get($user_req_url);
     my $user_data = JSON::XS::decode_json($user_res->content);
-    $self->session("user", $user_data->{response}->{user});
+    $self->session("4sq_user", $user_data->{response}->{user});
     $self->response->redirect("/dashboard/");
+  }
+
+  sub receive_token_runkeeper {
+    my ($self) = @_;
+
+    my $v = $self->request->parameters;
+
+    my $furl = Furl->new;
+    my $request = POST 'https://runkeeper.com/apps/token',
+      Content_Type => 'form-data',
+      Content => [
+        grant_type    => 'authorization_code',
+        code          => $v->{code},
+        client_id     => $RK_CLIENT_ID,
+        client_secret => $RK_CLIENT_SECRET,
+        redirect_uri  => $RK_CALLBACK_URL
+      ];
+   my $res = $furl->request($request);
+
+   my $data = JSON::XS::decode_json($res->content);
+   $self->session("runkeeper_token", $data->{access_token});
+   $self->response->redirect("/dashboard/");
   }
 }
 
@@ -237,8 +297,8 @@ package main {
     '/dashboard/venue/(\w+)' => 'DashboardVenueHandler',
     "/dashboard/update" => 'DashboardUpdateHandler',
     "/dashboard/" => 'DashboardHandler',
-    "/authenticate/receive" => 'AuthReceiveHandler',
-    "/authenticate" => 'AuthenticateHandler',
+    '/authenticate/receive/(\w+)' => 'AuthReceiveHandler',
+    '/authenticate/(\w+)' => 'AuthenticateHandler',
     "/" => 'RootHandler',
   ]);
 
