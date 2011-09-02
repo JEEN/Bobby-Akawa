@@ -91,3 +91,15 @@ li:active { color: #DD5F18; }
 #People a:link { color: #DD5F18; }
 #VisitedAt { font-style: italic; }
 #location { font-size: 2em; }
+
+#user li {
+    display: inline;
+}
+
+#mylocation {
+    position: fixed;
+    top: 300px;
+    right: 50px;
+    padding-left: 20px;
+    background: url(mylocation.png) 0% 0% no-repeat;
+}

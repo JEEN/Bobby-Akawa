@@ -169,12 +169,19 @@
  <div id="nav">
 % my $self = $_[0]->{handler};
 % if (my $user = $self->session("user")) {
-  <div id="user">
+  <ul id="user">
+   <li class="photo"><img src="<%= $user->{photo} %>" /></li>
+   <li class="profile"><%#= $user->{firstName} %> <%#= $user->{lastName} %></li>
+   <li id="Updater"><a href="#">UPDATE!</a></li>
+  <!--
+   <li id="MyLoc"><a href="#">Here am I!</a></li>
+
    <div class="photo"><img src="<%= $user->{photo} %>" /></div>
    <div class="profile"><%= $user->{firstName} %> <%= $user->{lastName} %></div>
    <div id="Updater"><a href="#">UPDATE!</a></div>
    <div id="MyLoc"><a href="#">Here am I!</a></div>
-  </div>
+  -->
+  </ul>
 % } else {
   <div id="login_pannel">
    <p><a href="/authenticate">LOGIN</a></p>
@@ -182,6 +189,7 @@
 % }
  </div>
  <div id="map"></div>
+ <div id="mylocation"></div>
  <div id="ul-list"><ul id="list"></ul></div>
  <div id="result">
   <h4 id="location"></h4>
