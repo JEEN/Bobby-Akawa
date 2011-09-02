@@ -10,6 +10,7 @@
 <script src="http://platform.twitter.com/anywhere.js?id=DQn4FwJUxolRCYvdHeYJUQ&v=1"></script>
 <script src="/static/mustache.js"></script>
 <script src="/static/jquery.ev.js"></script>
+<script src="/static/jQueryRotate.2.1.js"></script>
 <script>
   var map;
   var location_cache = {};
@@ -56,11 +57,18 @@
   };
 
   $(function () { 
+
+    $("#Updater img").rotate({ bind: { 
+      click: function() {
+        $(this).rotate({ angle:0,animateTo:360,easing: $.easing.easeInOutExpo })
+      }
+    }});
+
     $('#Updater').click(function () {
       Bobby.update();
     });
 
-    $('#MyLoc').click(function () {
+    $('#mylocation').click(function () {
       if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(function (pos) {
           NotiBar.showMessage("success", "I Found You!");
@@ -117,7 +125,7 @@
 
 	   $('#location').html(e.name);
            $('#VisitedAt').html(date.toDateString() + " " + date.toTimeString());
-           $('#People').html(e.people);
+           $('#People').html("w/ " + e.people);
            twttr.anywhere(function (T) {
              T('#People').hovercards();
            });
@@ -173,7 +181,7 @@
   <ul id="user">
    <li class="photo"><img src="<%= $user->{photo} %>" width="32" height="32" /></li>
    <li class="profile"><%= $user->{firstName} %> <%= $user->{lastName} %></li>
-   <li id="Updater"><a href="#">UPDATE!</a></li>
+   <li id="Updater"><img src="/static/ic_menu_refresh.png" alt="update"></li>
   <!--
    <li id="MyLoc"><a href="#">Here am I!</a></li>
 
@@ -190,7 +198,7 @@
 % }
  </div>
  <div id="map"></div>
- <div id="mylocation"></div>
+ <div id="mylocation"><img src="/static/ic_menu_mylocation.png" alt="mylocation"></div>
  <div id="ul-list"><ul id="list"></ul></div>
  <div id="result">
   <h4 id="location"></h4>
