@@ -79,6 +79,7 @@
             icon: "/static/person.png",
             title: "You're Here!"
           });
+          map.setCenter(loc);
         }, function () {
           NotiBar.showMessage("error", "Could not use Geolocation API");
         });
