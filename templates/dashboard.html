@@ -183,18 +183,10 @@
    <li class="photo"><img src="<%= $user->{photo} %>" width="32" height="32" /></li>
    <li class="profile"><%= $user->{firstName} %> <%= $user->{lastName} %></li>
    <li id="Updater"><img src="/static/ic_menu_refresh.png" alt="update"></li>
-  <!--
-   <li id="MyLoc"><a href="#">Here am I!</a></li>
-
-   <div class="photo"><img src="<%= $user->{photo} %>" /></div>
-   <div class="profile"><%= $user->{firstName} %> <%= $user->{lastName} %></div>
-   <div id="Updater"><a href="#">UPDATE!</a></div>
-   <div id="MyLoc"><a href="#">Here am I!</a></div>
-  -->
   </ul>
 % } else {
   <div id="login_pannel">
-   <p><a href="/authenticate/4sq">LOGIN</a></p>
+   <p><a href="/authenticate/4sq"><img src="/static/connect_4sq.png" /></a></p>
   </div>
 % }
  </div>
