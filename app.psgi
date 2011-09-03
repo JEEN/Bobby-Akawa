@@ -22,6 +22,8 @@ our $SERVICES = {
   "runkeeper" => 1,
 };
 
+our $EXPORT_SESSION = {};
+
 package BobbyBaseHandler {
   use base qw(Tatsumaki::Handler);
 
@@ -192,6 +194,9 @@ package DashboardHandler {
 
   sub get {
     my($self, $channel) = @_;
+
+    my $session = Plack::Session->new($self->request->env);
+    $EXPORT_SESSION = $session->dump if $ENV{PERL_BOBBY_DEBUG};
     $self->render('dashboard.html');
   }
 }
@@ -290,23 +295,11 @@ package AuthReceiveHandler {
 
 package SessionImportHandler {
   use base qw(BobbyBaseHandler);
-  __PACKAGE__->asynchronous(1);
 
   sub get {
     my($self) = shift;
-    my $client = Tatsumaki::HTTPClient->new;
-    my $url = 'http://boddy.silex.kr/session/export';
-    $client->get($url, $self->async_cb(sub { $self->on_response(@_) } ));
-  }
-
-  sub on_response {
-    my ($self, $res) = @_;
-
-    if ($res->is_error) {
-      Tatsumaki::Error::HTTP->throw(500);
-    }
-
-    my $content = decode_json($res->content);
+    my $furl = Furl->new->get('http://bobby.silex.kr/session/export');
+    my $content = JSON::XS::decode_json($furl->content);
     while (my ($key, $val) = each %$content) {
       $self->session($key, $val);
     }
@@ -322,7 +315,7 @@ package SessionExportHandler {
     my($self) = shift;
 
     my $session = Plack::Session->new($self->request->env);
-    $self->write($session->dump);
+    $self->write($EXPORT_SESSION);
   }
 }
 
