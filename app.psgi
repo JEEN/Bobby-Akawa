@@ -27,7 +27,7 @@ package BobbyBaseHandler {
 
   sub session {
     my ($self,$k,$v) = @_;
-    
+
     !$k and !$v and return undef;
 
     my $session = Plack::Session->new($self->request->env);
@@ -81,9 +81,9 @@ package DashboardPostHandler {
 
     $mq->publish({
         type => "message", id => $v->{id}, name => Encode::decode_utf8($v->{name}),
-        lat => $v->{lat}, lng => $v->{lng}, icon => $v->{icon}, people => $v->{people}, 
+        lat => $v->{lat}, lng => $v->{lng}, icon => $v->{icon}, people => $v->{people},
         created_at => $v->{created_at}, address => $self->request->address,
-        time => scalar Time::HiRes::gettimeofday, 
+        time => scalar Time::HiRes::gettimeofday,
     });
     $self->write({ success => 1 });
   }
@@ -121,7 +121,7 @@ package DashboardVenueHandler {
 
 package DashboardUpdateHandler {
   use base qw(BobbyBaseHandler);
-  __PACKAGE__->asynchronous(1);  
+  __PACKAGE__->asynchronous(1);
 
   sub get {
     my ($self, $oauth_token) = @_;
@@ -203,7 +203,7 @@ package AuthenticateHandler {
     my ($self, $service) = @_;
 
     unless ($SERVICES->{$service}) {
-       Tatsumaki::Error::HTTP->throw(500); 
+       Tatsumaki::Error::HTTP->throw(500);
     }
 
     my $method = sprintf 'redirect_to_%s', $service;
@@ -235,7 +235,7 @@ package AuthReceiveHandler {
     my ($self, $service) = @_;
 
     unless ($SERVICES->{$service}) {
-       Tatsumaki::Error::HTTP->throw(500);     
+       Tatsumaki::Error::HTTP->throw(500);
     }
 
     my $method = sprintf "receive_token_%s", $service;
@@ -288,10 +288,49 @@ package AuthReceiveHandler {
   }
 }
 
+package SessionImportHandler {
+  use base qw(BobbyBaseHandler);
+  __PACKAGE__->asynchronous(1);
+
+  sub get {
+    my($self) = shift;
+    my $client = Tatsumaki::HTTPClient->new;
+    my $url = 'http://boddy.silex.kr/session/export';
+    $client->get($url, $self->async_cb(sub { $self->on_response(@_) } ));
+  }
+
+  sub on_response {
+    my ($self, $res) = @_;
+
+    if ($res->is_error) {
+      Tatsumaki::Error::HTTP->throw(500);
+    }
+
+    my $content = decode_json($res->content);
+    while (my ($key, $val) = each %$content) {
+      $self->session($key, $val);
+    }
+
+    $self->response->redirect('/dashboard/');
+  }
+}
+
+package SessionExportHandler {
+  use base qw(BobbyBaseHandler);
+
+  sub get {
+    my($self) = shift;
+
+    my $session = Plack::Session->new($self->request->env);
+    $self->write($session->dump);
+  }
+}
+
 package main {
   use File::Basename;
   use Plack::Builder;
-  my $app = Tatsumaki::Application->new([
+
+  my $handlers = [
     "/dashboard/poll" => 'DashboardPollHandler',
     "/dashboard/post" => 'DashboardPostHandler',
     '/dashboard/venue/(\w+)' => 'DashboardVenueHandler',
@@ -300,14 +339,20 @@ package main {
     '/authenticate/receive/(\w+)' => 'AuthReceiveHandler',
     '/authenticate/(\w+)' => 'AuthenticateHandler',
     "/" => 'RootHandler',
-  ]);
+  ];
 
+  if ($ENV{PERL_BOBBY_DEBUG}) {
+    push @$handlers, qw(/session/import SessionImportHandler /session/export SessionExportHandler);
+  }
+
+  my $app = Tatsumaki::Application->new($handlers);
   $app->template_path(dirname(__FILE__) . "/templates");
   $app->static_path(dirname(__FILE__) . "/static");
 
   my $psgi_app =  $app->psgi_app;
   builder {
     enable "Session";
+    enable 'Debug', panels => [ qw(Environment Response Timer Memory) ] if $ENV{PERL_BOBBY_DEBUG};
     $psgi_app;
   }
 }
