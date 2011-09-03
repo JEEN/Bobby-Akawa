@@ -342,7 +342,9 @@ package main {
   ];
 
   if ($ENV{PERL_BOBBY_DEBUG}) {
-    push @$handlers, qw(/session/import SessionImportHandler /session/export SessionExportHandler);
+#    push @$handlers, qw(/session/import SessionImportHandler /session/export SessionExportHandler);
+     unshift @$handlers, [qw{/session/import SessionImportHandler}];
+     unshift @$handlers, [qw{/session/export SessionExportHandler}];
   }
 
   my $app = Tatsumaki::Application->new($handlers);
