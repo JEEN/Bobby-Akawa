@@ -180,7 +180,7 @@
 % my $self = $_[0]->{handler};
 % if (my $user = $self->session("4sq_user")) {
   <ul id="user">
-   <li class="photo"><img src="<%= $user->{photo} %>" width="32" height="32" /></li>
+   <li class="photo"><img src="<%= $user->{photo} %>" alt="avatar" /></li>
    <li class="profile"><%= $user->{firstName} %> <%= $user->{lastName} %></li>
    <li id="Updater"><img src="/static/ic_menu_refresh.png" alt="update"></li>
   </ul>
