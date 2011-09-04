@@ -346,7 +346,7 @@ package main {
   my $psgi_app =  $app->psgi_app;
   builder {
     enable "Session";
-    enable 'Debug', panels => [ qw(Environment Response Timer Memory) ] if $ENV{PERL_BOBBY_DEBUG};
+#    enable 'Debug', panels => [ qw(Environment Response Timer Memory) ] if $ENV{PERL_BOBBY_DEBUG};
     $psgi_app;
   }
 }
