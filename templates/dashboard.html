@@ -5,12 +5,14 @@
 <link rel="stylesheet" type="text/css" href="/static/reset-min.css" />
 <link rel="stylesheet" type="text/css" href="/static/style.css" />
 <link rel="stylesheet" href="/static/notification.css" />
+<link rel="stylesheet" href="/static/facebox.css" />
 <script type="text/javascript" src="http://maps.googleapis.com/maps/api/js?sensor=false"></script>
 <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.js"></script>
 <script src="http://platform.twitter.com/anywhere.js?id=DQn4FwJUxolRCYvdHeYJUQ&v=1"></script>
 <script src="/static/mustache.js"></script>
 <script src="/static/jquery.ev.js"></script>
 <script src="/static/jQueryRotate.2.1.js"></script>
+<script src="/static/facebox.js"></script>
 <script>
   var map;
   var location_cache = {};
@@ -120,7 +122,11 @@
    		$(res.photos).each(function (id, data) {
 		  var thumbnail = data.sizes.items[2];
 		  if (!thumbnail) return;	   
-                  $('<img>').attr({ src: thumbnail.url, width: thumbnail.width, height: thumbnail.height }).appendTo($('#Photos'));
+                  $('<img>').attr({ src: thumbnail.url, width: thumbnail.width, height: thumbnail.height, rel: 'facebox' })
+                  .click(function() {
+                    jQuery.facebox({ image: data.sizes.items[0].url }, 'album');
+                  })
+                  .appendTo($('#Photos'));
 		});
            });
 

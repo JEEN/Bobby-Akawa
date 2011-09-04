@@ -143,6 +143,11 @@ li:active { color: #DD5F18; }
   cursor: pointer;
 }
 
+.album {
+    height: 50%;
+    width: 50%;
+}
+
 #Updater img {
   width: 2em;
   height: 2em;
