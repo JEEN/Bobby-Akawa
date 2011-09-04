@@ -1,19 +1,25 @@
+% my $self = $_[0]->{handler};
+% my $mxhr = $self->request->param('mxhr');
 <html>
 <head>
 <title>Dashboard</title>
 <meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
-<link rel="stylesheet" type="text/css" href="/static/reset-min.css" />
-<link rel="stylesheet" type="text/css" href="/static/style.css" />
-<link rel="stylesheet" href="/static/notification.css" />
-<link rel="stylesheet" href="/static/facebox.css" />
+<link rel="stylesheet" type="text/css" href="/static/css/reset-min.css" />
+<link rel="stylesheet" type="text/css" href="/static/css/style.css" />
+<link rel="stylesheet" href="/static/css/notification.css" />
+<link rel="stylesheet" href="/static/css/facebox.css" />
 <script type="text/javascript" src="http://maps.googleapis.com/maps/api/js?sensor=false"></script>
 <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.js"></script>
 <script src="http://platform.twitter.com/anywhere.js?id=DQn4FwJUxolRCYvdHeYJUQ&v=1"></script>
-<script src="/static/mustache.js"></script>
-<script src="/static/jquery.ev.js"></script>
-<script src="/static/jQueryRotate.2.1.js"></script>
-<script src="/static/facebox.js"></script>
+<!--<script src="/static/js/head.load.min.js"></script>-->
+<script src="/static/js/mustache.js"></script>
+<script src="/static/js/jquery.ev.js"></script>
+<script src="/static/js/jQueryRotate.2.1.js"></script>
+<script src="/static/js/DUI.js"></script>
+<script src="/static/js/Stream.js"></script>
+<script src="/static/js/facebox.js"></script>
 <script>
+
   var map;
   var location_cache = {};
   function load() {
@@ -78,7 +84,7 @@
           var marker = new google.maps.Marker({
             position: loc,
             map: map,
-            icon: "/static/person.png",
+            icon: "/static/images/person.png",
             title: "You're Here!"
           });
           map.setCenter(loc);
@@ -152,7 +158,6 @@
         google.maps.event.addListener(marker, 'click', function () {
           show_status();
         });
-//        map.setCenter(location);
 
         $('#list').append(
             $('<li/>').html(e.name)
@@ -163,8 +168,17 @@
       } catch (e) { if (console) console.log(e) };
     }
 
-    $.ev.handlers.message = onNewEvent;
-    $.ev.loop('/dashboard/poll?client_id=' + Math.random());
+    if (typeof DUI != 'undefined') {
+      var s = new DUI.Stream();
+      s.listen('application/json', function(payload) {
+        var event = eval('(' + payload + ')');
+        onNewEvent(event);
+      });
+      s.load('/dashboard/mxhrpoll');
+    } else {
+      $.ev.handlers.message = onNewEvent;
+      $.ev.loop('/dashboard/poll?client_id=' + Math.random());
+    }
 });
 </script>
 </head>
@@ -183,21 +197,20 @@
 
 <div id="content"> 
  <div id="nav">
-% my $self = $_[0]->{handler};
 % if (my $user = $self->session("4sq_user")) {
   <ul id="user">
    <li class="photo"><img src="<%= $user->{photo} %>" alt="avatar" /></li>
    <li class="profile"><%= $user->{firstName} %> <%= $user->{lastName} %></li>
-   <li id="Updater"><img src="/static/ic_menu_refresh.png" alt="update"></li>
+   <li id="Updater"><img src="/static/images/ic_menu_refresh.png" alt="update"></li>
   </ul>
 % } else {
   <div id="login_pannel">
-   <p><a href="/authenticate/4sq"><img src="/static/connect_4sq.png" /></a></p>
+   <p><a href="/authenticate/4sq"><img src="/static/images/connect_4sq.png" /></a></p>
   </div>
 % }
  </div>
  <div id="map"></div>
- <div id="mylocation"><img src="/static/ic_menu_mylocation.png" alt="mylocation"></div>
+ <div id="mylocation"><img src="/static/images/ic_menu_mylocation.png" alt="mylocation"></div>
  <div id="ul-list"><ul id="list"></ul></div>
  <div id="result">
   <h4 id="location"></h4>

@@ -69,6 +69,31 @@ package DashboardPollHandler {
   }
 }
 
+package DashboardMultipartPollHandler {
+  use base qw(BobbyBaseHandler);
+  __PACKAGE__->asynchronous(1);
+
+  sub get {
+    my($self, $channel) = @_;
+
+    $channel ||= 1;
+
+    my $client_id = $self->request->param('client_id') || rand(1);
+
+    $self->multipart_xhr_push(1);
+
+    my $mq = Tatsumaki::MessageQueue->instance($channel);
+
+    $mq->poll($client_id, sub {
+        my @events = @_;
+        for my $event (@events) {
+            $self->stream_write($event);
+        }
+    });
+  }
+
+}
+
 package DashboardPostHandler {
   use base qw(BobbyBaseHandler);
   use Encode;
@@ -325,6 +350,7 @@ package main {
 
   my $handlers = [
     "/dashboard/poll" => 'DashboardPollHandler',
+    "/dashboard/mxhrpoll" => 'DashboardMultipartPollHandler',
     "/dashboard/post" => 'DashboardPostHandler',
     '/dashboard/venue/(\w+)' => 'DashboardVenueHandler',
     "/dashboard/update" => 'DashboardUpdateHandler',
