@@ -1,12 +1,3 @@
-load = ->
-  latlng = new google.maps.LatLng(37.541, 127.066)
-  myOptions = 
-    zoom: 16
-    center: latlng
-    mapTypeId: google.maps.MapTypeId.ROADMAP
-  
-  map = new google.maps.Map(document.getElementById("map"), myOptions)
-
 location_cache = {}
 cache = {}
 NotiBar = 
@@ -35,7 +26,15 @@ Bobby =
     $.when_($.getJSON("/dashboard/updater")).then (resp) ->
       NotiBar.showMessage "success", "새로운 체크인정보를 업데이트하였습니다"
 
-$ ->
+$(document).ready ->
+  latlng = new google.maps.LatLng(37.541, 127.066)
+  myOptions = 
+    zoom: 16
+    center: latlng
+    mapTypeId: google.maps.MapTypeId.ROADMAP
+
+  map = new google.maps.Map(document.getElementById("map"), myOptions)
+
   $("#Updater img").rotate bind: click: ->
     $(this).rotate 
       angle: 0
