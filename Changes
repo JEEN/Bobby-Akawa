@@ -1,4 +1,8 @@
 
+0.2  - 2011-12-20 18:45:00 KST
+
+    - Moved to wrapper classes from "one psgi file"
+
 0.1  - 2011-10-16 20:00:00 KST
 
     - init release
