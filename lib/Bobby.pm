@@ -53,7 +53,13 @@ sub to_psgi {
             enable 'OAuth',
                 on_success => sub { 
                     my ($mw, $token) = @_;
-                    # ...
+
+                    my $userinfo = Plack::Middleware::OAuth::UserInfo->new( config => $mw->config , token => $token );
+                    if( $token->is_provider('Twitter')  || $token->is_provider('GitHub') || $token->is_provider('Foursquare') ) {
+                      my $info = $userinfo->ask( $token->provider );
+                      return $mw->to_yaml( $info );
+                    }
+                    return $mw->render( 'Error' );
                 },
                 on_error   => sub { Tatsumaki::Error::HTTP->throw(500); },
                 providers  => $self->config->{OAuth}->{providers},
