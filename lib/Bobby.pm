@@ -2,13 +2,22 @@ package Bobby;
 use Moose;
 use namespace::autoclean;
 use Plack::Builder;
+use Config::ZOMG;
 extends 'Tatsumaki::Application';
 
 has config => (
     is => 'ro',
     isa => 'HashRef',
-    default => sub { {} },
+    lazy_build => 1,
 );
+
+sub _build_config {
+    my $self = shift;
+
+    Config::ZOMG->new(
+        name => __PACKAGE__,
+    )->load;
+}
 
 sub BUILD {
     my $self = shift;
@@ -21,15 +30,7 @@ sub BUILD {
 sub BUILDARGS {
     my $class = shift;
 
-    my $dispatch_rules;
-
-    if (ref $_[0] eq 'ARRAY') {
-        $dispatch_rules = shift @_;
-    } else {
-        $dispatch_rules = [];
-    }
-
-    push @{ $dispatch_rules }, (
+    my $rules = [
         '/dashboard/poll'             => 'Bobby::Handler::Dashboard::Poll',
         '/dashboard/mxhrpoll'         => 'Bobby::Handler::Dashboard::MultipartPoll',
         '/dashboard/post'             => 'Bobby::Handler::Dashboard::Post',
@@ -37,12 +38,9 @@ sub BUILDARGS {
         '/dashboard/venue/(\w+)'      => 'Bobby::Handler::DashboardVenue',
         '/dashboard/'                 => 'Bobby::Handler::Dashboard',
         '/'                           => 'Bobby::Handler::Root',
-    );
+    ];
 
-    map { Plack::Util::load_class($_) } grep { /^Bobby/ } @{ $dispatch_rules };
-    unshift @_, $dispatch_rules;
- 
-    return $class->SUPER::BUILDARGS(@_);
+    return $class->SUPER::BUILDARGS($rules);
 }
 
 sub to_psgi {
@@ -50,25 +48,36 @@ sub to_psgi {
 
     my $app = $self->psgi_app;
     $app = builder {
+        enable 'Session';
         mount '/oauth' => builder {
-            enable 'Session';
             enable 'OAuth',
                 on_success => sub { 
                     my ($mw, $token) = @_;
                     # ...
                 },
                 on_error   => sub { Tatsumaki::Error::HTTP->throw(500); },
-                providers  => {
-                	'Foursquare' => {
-                		client_id     => $ENV{'4SQ_CLIENT_ID'} || '0Z5WKEHGKJYNM0Z1VRXNG3ZC1T02DLTH1JLK4SXCU5V4RFWS',
-                		client_secret => $ENV{'4SQ_CLIENT_SECRET'} || 'I1HN2BJ2EHYZT2HZD2GUYQVTQN55GURLJS1RHLYL1OBII1HC',
-                	},
-                };
+                providers  => $self->config->{OAuth}->{providers},
         };
         mount '/' => $app;
     };
     $app;
 }
+
+override dispatch => sub {
+    my($self, $req) = @_;
+
+    my $path = $req->path;
+    for my $rule (@{$self->_rules}) {
+        if ($path =~ $rule->{path}) {
+            my $args = [ $1, $2, $3, $4, $5, $6, $7, $8, $9 ];
+            my $handler = $rule->{handler};
+            Class::MOP::load_class($handler);
+            return $handler->new(@_, args => $args, request => $req, application => $self);
+        }
+    }
+
+    return;
+};
 
 __PACKAGE__->meta->make_immutable;
 
