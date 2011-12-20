@@ -1,4 +1,4 @@
-package Plack::Middleware::UserInfo::Foursquare;
+package Plack::Middleware::OAuth::UserInfo::Foursquare;
 use strict;
 use warnings;
 use parent qw(Plack::Middleware::OAuth::UserInfo);
