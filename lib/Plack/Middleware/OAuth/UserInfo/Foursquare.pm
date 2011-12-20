@@ -1,7 +1,7 @@
 package Plack::Middleware::UserInfo::Foursquare;
 use strict;
 use warnings;
-use parent qw(Plack::Middleware::UserInfo);
+use parent qw(Plack::Middleware::OAuth::UserInfo);
 use LWP::UserAgent;
 use JSON;
 
