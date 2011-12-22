@@ -55,9 +55,8 @@ sub to_psgi {
                     my ($mw, $token) = @_;
 
                     my $userinfo = Plack::Middleware::OAuth::UserInfo->new( config => $mw->config , token => $token );
-                    if( $token->is_provider('Twitter')  || $token->is_provider('GitHub') || $token->is_provider('Foursquare') ) {
-                      my $info = $userinfo->ask( $token->provider );
-                      return $mw->to_yaml( $info );
+                    if ( $token->is_provider('Foursquare') ) {
+                        return $mw->redirect('/');
                     }
                     return $mw->render( 'Error' );
                 },
