@@ -5,10 +5,7 @@ use parent qw(Plack::Middleware::OAuth::UserInfo);
 use LWP::UserAgent;
 use JSON;
 
-sub create_handle {
-    my $self = shift;
-
-}
+sub create_handle {}
 
 sub query {
     my $self = shift;
